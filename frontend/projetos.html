@@ -8,24 +8,24 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
-        .form-control { background: #0d1a30; }
+        .form-control { background: #064a7d; }
         
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .modal-overlay.active { opacity: 1; pointer-events: all; }
-        .modal-box { background: #f8fafc; color: #333; width: 90%; max-width: 800px; max-height: 90vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); transform: scale(0.95); transition: transform 0.3s ease; }
+        .modal-box { background: #ffffff; color: #26364a; width: 90%; max-width: 800px; max-height: 90vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); transform: scale(0.95); transition: transform 0.3s ease; }
         .modal-overlay.active .modal-box { transform: scale(1); }
-        .modal-header { padding: 1.5rem; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background: #eff6ff; }
+        .modal-header { padding: 1.5rem; border-bottom: 1px solid #dce6ec; display: flex; justify-content: space-between; align-items: center; background: #eef6fb; }
         .modal-body { padding: 1.5rem; overflow-y: auto; }
-        .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b; }
+        .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #657487; }
         .close-btn:hover { color: #ef4444; }
         
         .action-btn { background: none; border: none; cursor: pointer; padding: 0.5rem; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; transition: background 0.2s; color: var(--text-color); }
         .action-btn:hover { background: rgba(255,255,255,0.2); }
         
         table.light-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 1rem; }
-        table.light-table th, table.light-table td { padding: 0.75rem; border-bottom: 1px solid #e5e7eb; text-align: left; }
-        table.light-table th { background: #f1f5f9; color: #475569; font-weight: 600; }
-        table.light-table td { color: #334155; }
+        table.light-table th, table.light-table td { padding: 0.75rem; border-bottom: 1px solid #dce6ec; text-align: left; }
+        table.light-table th { background: #f3f7fa; color: #465569; font-weight: 600; }
+        table.light-table td { color: #26364a; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -70,20 +70,20 @@
                     <div class="grid-form">
                         <div class="form-group" style="grid-column: 1 / -1;">
                             <label class="form-label" for="nome">Nome do Projeto</label>
-                            <input type="text" id="nome" name="nome" class="form-control" required style="background: #0d1a30;">
+                            <input type="text" id="nome" name="nome" class="form-control" required style="background: #064a7d;">
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="data_inicio">Data de Início</label>
-                            <input type="date" id="data_inicio" name="data_inicio" class="form-control" required style="background: #0d1a30;">
+                            <input type="date" id="data_inicio" name="data_inicio" class="form-control" required style="background: #064a7d;">
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="data_fim">Data Final (Prevista/Concluída)</label>
-                            <input type="date" id="data_fim" name="data_fim" class="form-control" required style="background: #0d1a30;">
+                            <input type="date" id="data_fim" name="data_fim" class="form-control" required style="background: #064a7d;">
                         </div>
 <!-- Status Removido do Form (assumirá 'Em andamento' por padrão) -->
                         <div class="form-group">
                             <label class="form-label" for="prioridade">Prioridade</label>
-                            <select id="prioridade" name="prioridade" class="form-control" required style="background: #0d1a30;">
+                            <select id="prioridade" name="prioridade" class="form-control" required style="background: #064a7d;">
                                 <option value="Alta">Alta</option>
                                 <option value="Média">Média</option>
                                 <option value="Baixa">Baixa</option>
@@ -91,11 +91,11 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="id_responsavel_nome">Líder / Responsável Principal</label>
-                            <select id="id_responsavel_nome" name="id_responsavel_nome" class="form-control" required style="background: #0d1a30;"></select>
+                            <select id="id_responsavel_nome" name="id_responsavel_nome" class="form-control" required style="background: #064a7d;"></select>
                         </div>
                         <div class="form-group admin-only" id="div_setor" style="display:none;">
                             <label class="form-label" for="id_setor">Setor Responsável</label>
-                            <select id="id_setor" name="id_setor" class="form-control" style="background: #0d1a30;"></select>
+                            <select id="id_setor" name="id_setor" class="form-control" style="background: #064a7d;"></select>
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary" style="width: auto; margin-top: 1rem;"><i class="fa-solid fa-save"></i> Salvar Projeto</button>
@@ -129,32 +129,32 @@
         <div class="modal-box">
             <div class="modal-header">
                 <div>
-                    <h3 id="modal-titulo" style="font-size: 1.25rem; font-weight: bold; color: #1e3a8a;"><i class="fa-solid fa-project-diagram"></i> Projeto: </h3>
-                    <p style="font-size: 0.85rem; color: #64748b;">Visualize e gerencie a lista de atividades deste projeto</p>
+                    <h3 id="modal-titulo" style="font-size: 1.25rem; font-weight: bold; color: #064a7d;"><i class="fa-solid fa-project-diagram"></i> Projeto: </h3>
+                    <p style="font-size: 0.85rem; color: #657487;">Visualize e gerencie a lista de atividades deste projeto</p>
                 </div>
                 <button class="close-btn" onclick="fecharModal()"><i class="fa-solid fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <div style="background: #f1f5f9; padding: 1.25rem; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 1.5rem;">
-                    <h4 style="margin-bottom: 1rem; color: #334155; font-size: 1rem;"><i class="fa-solid fa-plus-circle"></i> Adicionar Nova Tarefa</h4>
+                <div style="background: #f3f7fa; padding: 1.25rem; border-radius: 8px; border: 1px solid #cbd8e1; margin-bottom: 1.5rem;">
+                    <h4 style="margin-bottom: 1rem; color: #26364a; font-size: 1rem;"><i class="fa-solid fa-plus-circle"></i> Adicionar Nova Tarefa</h4>
                     <form id="form-tarefa">
                         <input type="hidden" id="modal_id_projeto">
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: flex-end;">
                             <div class="form-group" style="margin-bottom: 0;">
-                                <label style="display: block; font-size: 0.8rem; font-weight: 500; margin-bottom: 0.25rem; color: #475569;">Nome da Tarefa</label>
-                                <input type="text" id="nome_tarefa" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.875rem;" required>
+                                <label style="display: block; font-size: 0.8rem; font-weight: 500; margin-bottom: 0.25rem; color: #465569;">Nome da Tarefa</label>
+                                <input type="text" id="nome_tarefa" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd8e1; border-radius: 6px; font-size: 0.875rem;" required>
                             </div>
                             <div class="form-group" style="margin-bottom: 0;">
-                                <label style="display: block; font-size: 0.8rem; font-weight: 500; margin-bottom: 0.25rem; color: #475569;">Responsável</label>
-                                <input type="text" id="responsavel_nome_tarefa" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.875rem;" required>
+                                <label style="display: block; font-size: 0.8rem; font-weight: 500; margin-bottom: 0.25rem; color: #465569;">Responsável</label>
+                                <input type="text" id="responsavel_nome_tarefa" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd8e1; border-radius: 6px; font-size: 0.875rem;" required>
                             </div>
                             <div class="form-group" style="margin-bottom: 0;">
-                                <label style="display: block; font-size: 0.8rem; font-weight: 500; margin-bottom: 0.25rem; color: #475569;">Data de Início</label>
-                                <input type="date" id="data_inicio_tarefa" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.875rem;" required>
+                                <label style="display: block; font-size: 0.8rem; font-weight: 500; margin-bottom: 0.25rem; color: #465569;">Data de Início</label>
+                                <input type="date" id="data_inicio_tarefa" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd8e1; border-radius: 6px; font-size: 0.875rem;" required>
                             </div>
                             <div class="form-group" style="margin-bottom: 0;">
-                                <label style="display: block; font-size: 0.8rem; font-weight: 500; margin-bottom: 0.25rem; color: #475569;">Data Final</label>
-                                <input type="date" id="data_fim_tarefa" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.875rem;" required>
+                                <label style="display: block; font-size: 0.8rem; font-weight: 500; margin-bottom: 0.25rem; color: #465569;">Data Final</label>
+                                <input type="date" id="data_fim_tarefa" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd8e1; border-radius: 6px; font-size: 0.875rem;" required>
                             </div>
                             <div style="margin-bottom: 0;">
                                 <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.55rem; font-size: 0.875rem; background-color: var(--status_tag-green);">
@@ -164,7 +164,7 @@
                         </div>
                     </form>
                 </div>
-                <h4 style="color: #333; margin-bottom: 0.75rem;"><i class="fa-solid fa-tasks"></i> Lista de Tarefas</h4>
+                <h4 style="color: #26364a; margin-bottom: 0.75rem;"><i class="fa-solid fa-tasks"></i> Lista de Tarefas</h4>
                 <div style="overflow-x: auto;">
                     <table class="light-table" style="margin-top: 0;">
                         <thead>
@@ -307,7 +307,7 @@
                     <td>${usuariosMap[p.id_responsavel] || 'Desconhecido'}</td>
                     ${adminTd}
                     <td style="text-align: center;">
-                        <button class="action-btn" style="color: #60a5fa; margin-right: 0.5rem;" onclick="toggleDetails(${p.id_projeto})"><i class="fa-solid fa-chevron-down fa-lg" id="chevron-${p.id_projeto}"></i></button>
+                        <button class="action-btn" style="color: #8ed1f0; margin-right: 0.5rem;" onclick="toggleDetails(${p.id_projeto})"><i class="fa-solid fa-chevron-down fa-lg" id="chevron-${p.id_projeto}"></i></button>
                         <button class="action-btn" style="color: var(--status_tag-yellow);" onclick="abrirModalTarefas(${p.id_projeto}, '${p.nome.replace(/'/g, "\\'")}')"><i class="fa-solid fa-list-check fa-lg"></i></button>
                     </td>
                 `;
@@ -320,7 +320,7 @@
                     <td colspan="${colspan}" style="padding: 1.5rem; background: rgba(15, 23, 42, 0.25);">
                         <div style="background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.1);">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                                <div><h4 style="color: #fff;"><i class="fa-solid fa-folder-open" style="color: #60a5fa;"></i> ${p.nome}</h4></div>
+                                <div><h4 style="color: #fff;"><i class="fa-solid fa-folder-open" style="color: #8ed1f0;"></i> ${p.nome}</h4></div>
                                 <div style="min-width: 250px; background: rgba(0, 0, 0, 0.2); padding: 1rem; border-radius: 8px;">
                                     <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.5rem;">
                                         <span style="color: #fff;">Progresso</span> <span style="color: #10b981; font-weight: bold;">${concluidas} / ${total}</span>
@@ -330,7 +330,7 @@
                                         <div style="width: ${total > 0 ? (contVermelho/total)*100 : 0}%; background: #ef4444; height: 100%; transition: width 0.5s ease-in-out;" title="${contVermelho} com atraso"></div>
                                         <div style="width: ${total > 0 ? (contAmarelo/total)*100 : 0}%; background: #eab308; height: 100%; transition: width 0.5s ease-in-out;" title="${contAmarelo} pendentes"></div>
                                     </div>
-                                    <div style="font-size: 0.75rem; color: #94a3b8; text-align: right;">
+                                    <div style="font-size: 0.75rem; color: #b9d5e6; text-align: right;">
                                         ${p.percentual_conclusao ?? 0}% Concluído
                                     </div>
                                 </div>
@@ -348,7 +348,7 @@
                                         
                                         let iconHtml = '';
                                         if (!t.concluida) {
-                                            iconHtml = `<button onclick="toggleTarefaInline(${t.id_tarefa}, true, ${p.id_projeto})" style="background:none; border:none; cursor:pointer;" title="Marcar como Concluída"><i class="fa-regular fa-square" style="color:#64748b; font-size:1.1rem;"></i></button>`;
+                                            iconHtml = `<button onclick="toggleTarefaInline(${t.id_tarefa}, true, ${p.id_projeto})" style="background:none; border:none; cursor:pointer;" title="Marcar como Concluída"><i class="fa-regular fa-square" style="color:#657487; font-size:1.1rem;"></i></button>`;
                                         } else {
                                             const color = isLate ? '#ef4444' : '#10b981';
                                             iconHtml = `<button onclick="toggleTarefaInline(${t.id_tarefa}, false, ${p.id_projeto})" style="background:none; border:none; cursor:pointer;" title="${isLate ? 'Concluída com Atraso (Clique para desmarcar)' : 'Concluída no Prazo (Clique para desmarcar)'}"><i class="fa-solid fa-check" style="color:${color}; font-size:1.1rem;"></i></button>`;
@@ -358,7 +358,7 @@
                                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                                             <td style="padding: 0.75rem; text-align: center;">${iconHtml}</td>
                                             <td style="color: #fff; ${t.concluida ? 'text-decoration:line-through; opacity:0.5;' : ''}">${t.nome_tarefa}</td>
-                                            <td><span style="background: #334155; padding:2px 6px; border-radius:4px; color: #f8fafc; font-weight: 500;">${t.responsavel_nome}</span></td>
+                                            <td><span style="background: #26364a; padding:2px 6px; border-radius:4px; color: #ffffff; font-weight: 500;">${t.responsavel_nome}</span></td>
                                             <td style="color: #fff;">${formatData(t.data_fim)}</td>
                                         </tr>
                                         `;
@@ -448,16 +448,16 @@
             
             const p = projetosList.find(x => x.id_projeto === idProjeto);
             if (!p || !p.tarefas || p.tarefas.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748b; padding: 1.5rem;">Nenhuma tarefa registrada para este projeto.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #657487; padding: 1.5rem;">Nenhuma tarefa registrada para este projeto.</td></tr>';
             } else {
                 p.tarefas.forEach(t => {
                     const status_tagIcon = t.concluida 
                         ? '<i class="fa-solid fa-square-check" style="color: var(--status_tag-green); font-size: 1.3rem;"></i>' 
-                        : '<i class="fa-regular fa-square" style="color: #64748b; font-size: 1.3rem;"></i>';
+                        : '<i class="fa-regular fa-square" style="color: #657487; font-size: 1.3rem;"></i>';
                     
                     const textStyle = t.concluida 
-                        ? 'font-weight: 500; text-decoration: line-through; color: #94a3b8;' 
-                        : 'font-weight: 500; color: #334155;';
+                        ? 'font-weight: 500; text-decoration: line-through; color: #b9d5e6;' 
+                        : 'font-weight: 500; color: #26364a;';
                         
                     tbody.innerHTML += `
                         <tr>
@@ -467,7 +467,7 @@
                                 </button>
                             </td>
                             <td style="${textStyle}">${t.nome_tarefa}</td>
-                            <td><span style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; color: #475569;">${t.responsavel_nome}</span></td>
+                            <td><span style="background: #dce6ec; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; color: #465569;">${t.responsavel_nome}</span></td>
                             <td>${formatData(t.data_inicio)}</td>
                             <td>${formatData(t.data_fim)}</td>
                             <td style="text-align: center;">

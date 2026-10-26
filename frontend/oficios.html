@@ -28,7 +28,7 @@
             padding: 2rem;
             transform: scale(0.8) translateY(20px);
             transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            color: #f8fafc;
+            color: #ffffff;
         }
         .oficio-modal-overlay.active .oficio-modal-box {
             transform: scale(1) translateY(0);
@@ -41,13 +41,13 @@
         }
         .oficio-modal-title { font-size: 1.4rem; font-weight: 700; color: #fff; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
         .oficio-close-btn {
-            background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; transition: color 0.2s;
+            background: none; border: none; color: #b9d5e6; font-size: 1.5rem; cursor: pointer; transition: color 0.2s;
         }
         .oficio-close-btn:hover { color: #ef4444; }
         
         .oficio-detail-row { display: flex; flex-direction: column; margin-bottom: 1rem; }
-        .oficio-detail-label { font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 0.2rem; }
-        .oficio-detail-value { font-size: 1.05rem; color: #f1f5f9; line-height: 1.5; }
+        .oficio-detail-label { font-size: 0.85rem; color: #b9d5e6; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 0.2rem; }
+        .oficio-detail-value { font-size: 1.05rem; color: #f3f7fa; line-height: 1.5; }
         .oficio-detail-value.assunto { background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--primary-color); }
     </style>
 </head>
@@ -91,11 +91,11 @@
                 <form id="form-oficio" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
                     <div class="form-group" style="flex: 2; margin-bottom: 0;">
                         <label class="form-label" for="assunto">Assunto do Ofício</label>
-                        <input type="text" id="assunto" name="assunto" class="form-control" required style="background: #0d1a30;">
+                        <input type="text" id="assunto" name="assunto" class="form-control" required style="background: #064a7d;">
                     </div>
                     <div class="form-group" style="flex: 1; margin-bottom: 0;">
                         <label class="form-label" for="local_fisico">Localização Física (Opcional)</label>
-                        <input type="text" id="local_fisico" name="local_fisico" class="form-control" placeholder="Gaveta, Pasta..." style="background: #0d1a30;">
+                        <input type="text" id="local_fisico" name="local_fisico" class="form-control" placeholder="Gaveta, Pasta..." style="background: #064a7d;">
                     </div>
                     <button type="submit" class="btn btn-primary" style="width: auto;"><i class="fa-solid fa-plus"></i> Registrar</button>
                 </form>
@@ -297,7 +297,7 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                     <div class="oficio-detail-row">
                         <span class="oficio-detail-label">Data de Registro</span>
-                        <span class="oficio-detail-value"><i class="fa-regular fa-calendar" style="color: #60a5fa;"></i> ${formatData(o.data_oficio)}</span>
+                        <span class="oficio-detail-value"><i class="fa-regular fa-calendar" style="color: #8ed1f0;"></i> ${formatData(o.data_oficio)}</span>
                     </div>
                     <div class="oficio-detail-row">
                         <span class="oficio-detail-label">Setor</span>
@@ -305,7 +305,7 @@
                     </div>
                     <div class="oficio-detail-row" style="grid-column: span 2;">
                         <span class="oficio-detail-label">Autor (Lançamento)</span>
-                        <span class="oficio-detail-value"><i class="fa-regular fa-user" style="color: #94a3b8;"></i> ${autor}</span>
+                        <span class="oficio-detail-value"><i class="fa-regular fa-user" style="color: #b9d5e6;"></i> ${autor}</span>
                     </div>
                 </div>
                 
@@ -315,8 +315,8 @@
                 </div>
                 
                 <div class="oficio-detail-row" style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px; border: 1px dashed rgba(255,255,255,0.1);">
-                    <span class="oficio-detail-label" style="color: #cbd5e1;"><i class="fa-solid fa-location-dot" style="color: #f87171;"></i> Localização Física</span>
-                    <span class="oficio-detail-value" style="font-weight: 500;">${o.local_fisico || '<span style="color:#64748b; font-style:italic;">Não informada</span>'}</span>
+                    <span class="oficio-detail-label" style="color: #cbd8e1;"><i class="fa-solid fa-location-dot" style="color: #f87171;"></i> Localização Física</span>
+                    <span class="oficio-detail-value" style="font-weight: 500;">${o.local_fisico || '<span style="color:#657487; font-style:italic;">Não informada</span>'}</span>
                 </div>
             `;
             document.getElementById('modal-detalhes').classList.add('active');
