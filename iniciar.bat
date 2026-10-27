@@ -1,24 +1,36 @@
+
 @echo off
+setlocal
 title SIGDEI - Inicializador
+
+set "ROOT=%~dp0"
+set "PYTHON=%ROOT%.venv\Scripts\python.exe"
 
 echo ================================
 echo        INICIANDO SIGDEI
 echo ================================
 echo.
 
-REM Inicia o backend Django
-start "SIGDEI - BACKEND" cmd /k "cd /d "%~dp0backend" && ".venv\Scripts\python.exe" manage.py runserver"
+if not exist "%PYTHON%" (
+    echo ERRO: Python do ambiente virtual nao encontrado.
+    echo Caminho: "%PYTHON%"
+    pause
+    exit /b 1
+)
 
-REM Aguarda o Django iniciar
+echo Iniciando backend Django...
+start "SIGDEI - BACKEND" /D "%ROOT%backend" cmd /k ""%PYTHON%" manage.py runserver 127.0.0.1:8000"
+
 timeout /t 3 /nobreak >nul
 
-REM Inicia o servidor do frontend
-start "SIGDEI - FRONTEND" cmd /k "cd /d "%~dp0frontend" && "..\backend\.venv\Scripts\python.exe" -m http.server 5500"
+echo Iniciando frontend...
+start "SIGDEI - FRONTEND" cmd /k ""%PYTHON%" -m http.server 5500 --directory "%ROOT%frontend""
 
-REM Aguarda o frontend iniciar
 timeout /t 2 /nobreak >nul
 
-REM Abre a tela de login
+echo Abrindo SIGDEI no navegador...
 start "" "http://127.0.0.1:5500/index.html"
 
-exit
+echo.
+echo SIGDEI iniciado. Mantenha as janelas abertas.
+exit /b 0
