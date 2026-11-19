@@ -1,24 +1,41 @@
 @echo off
-title SIGDEI - Inicializador
+setlocal
+title SIGDEI - Inicializador local
+
+set "BASE=%~dp0"
+set "PYTHON=%BASE%.venv\Scripts\python.exe"
+
+if not exist "%PYTHON%" (
+    if exist "%LOCALAPPDATA%\Python\bin\python.exe" (
+        set "PYTHON=%LOCALAPPDATA%\Python\bin\python.exe"
+    ) else (
+        where py >nul 2>&1
+        if not errorlevel 1 (
+            set "PYTHON=py"
+        ) else (
+            set "PYTHON=python"
+        )
+    )
+)
 
 echo ================================
 echo        INICIANDO SIGDEI
 echo ================================
 echo.
 
-REM Inicia o backend Django
-start "SIGDEI - BACKEND" cmd /k "cd /d "%~dp0backend" && ".venv\Scripts\python.exe" manage.py runserver"
+echo Iniciando backend Django...
+start "SIGDEI - BACKEND" /D "%BASE%backend" cmd /k ""%PYTHON%" manage.py runserver 127.0.0.1:8000"
 
-REM Aguarda o Django iniciar
 timeout /t 3 /nobreak >nul
 
-REM Inicia o servidor do frontend
-start "SIGDEI - FRONTEND" cmd /k "cd /d "%~dp0frontend" && "..\backend\.venv\Scripts\python.exe" -m http.server 5500"
+echo Iniciando frontend...
+start "SIGDEI - FRONTEND" cmd /k ""%PYTHON%" -m http.server 5500 --bind 127.0.0.1 --directory "%BASE%frontend""
 
-REM Aguarda o frontend iniciar
 timeout /t 2 /nobreak >nul
 
-REM Abre a tela de login
+echo Abrindo SIGDEI no navegador...
 start "" "http://127.0.0.1:5500/index.html"
 
-exit
+echo.
+echo SIGDEI iniciado. Mantenha as janelas abertas.
+exit /b 0

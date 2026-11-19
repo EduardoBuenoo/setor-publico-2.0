@@ -14,6 +14,8 @@
     document.getElementById('shell-user-role').textContent = user.nivel_acesso || '';
     document.getElementById('shell-user-avatar').textContent = (user.nome || 'U').charAt(0).toUpperCase();
     if (user.nivel_acesso === 'Administrador' || user.nivel_acesso === 'Gestor') document.getElementById('shell-menu-usuarios').style.display = 'block';
+    if (['Administrador', 'Gestor', 'Secretário'].includes(user.nivel_acesso)) document.getElementById('shell-menu-assistente').style.display = 'block';
+    if (user.visao_estrategica) document.getElementById('shell-menu-cruzados').style.display = 'block';
 
     function setSidebarCollapsed(collapsed) {
         document.body.classList.toggle('sidebar-collapsed', collapsed);

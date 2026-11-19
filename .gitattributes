@@ -1,0 +1,14 @@
+# Normaliza fim de linha: o repositório guarda LF; o checkout se adapta ao sistema.
+* text=auto eol=lf
+
+# Scripts do Windows precisam de CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binários (nunca converter)
+*.pdf binary
+*.png binary
+*.jpg binary
+*.webp binary
+*.docx binary
+*.sqlite3 binary
