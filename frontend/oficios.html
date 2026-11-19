@@ -209,9 +209,9 @@
         async function init() {
             try {
                 const [setoresRes, usuariosRes, oficiosRes] = await Promise.all([
-                    fetch('http://127.0.0.1:8000/api/v1/setores/', { headers: apiHeaders }),
-                    fetch('http://127.0.0.1:8000/api/v1/usuarios/', { headers: apiHeaders }),
-                    fetch('http://127.0.0.1:8000/api/v1/oficios/', { headers: apiHeaders })
+                    fetch(`http://${window.location.hostname}:8000/api/v1/setores/`, { headers: apiHeaders }),
+                    fetch(`http://${window.location.hostname}:8000/api/v1/usuarios/`, { headers: apiHeaders }),
+                    fetch(`http://${window.location.hostname}:8000/api/v1/oficios/`, { headers: apiHeaders })
                 ]);
                 
                 const setores = await setoresRes.json();
@@ -346,7 +346,7 @@
                 assunto: document.getElementById('assunto').value
             };
             try {
-                const res = await fetch('http://127.0.0.1:8000/api/v1/oficios/', { method: 'POST', headers: apiHeaders, body: JSON.stringify(body) });
+                const res = await fetch(`http://${window.location.hostname}:8000/api/v1/oficios/`, { method: 'POST', headers: apiHeaders, body: JSON.stringify(body) });
                 if(res.ok) {
                     mostrarAlerta('Ofício registrado com sucesso! Número gerado automaticamente.');
                     setTimeout(() => document.getElementById('alert-box').style.display = 'none', 3000);

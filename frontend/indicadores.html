@@ -271,7 +271,7 @@
 
         async function init() {
             try {
-                const setoresRes = await fetch('http://127.0.0.1:8000/api/v1/setores/', { headers: apiHeaders });
+                const setoresRes = await fetch(`http://${window.location.hostname}:8000/api/v1/setores/`, { headers: apiHeaders });
                 if (setoresRes.status === 401) {
                     alert("Sua sessão expirou. Por favor, faça login novamente.");
                     localStorage.removeItem('jwt_token');
@@ -279,9 +279,9 @@
                     window.location.href = 'index.html';
                     return;
                 }
-                const usuariosRes = await fetch('http://127.0.0.1:8000/api/v1/usuarios/', { headers: apiHeaders });
-                const indicadoresRes = await fetch('http://127.0.0.1:8000/api/v1/indicadores/', { headers: apiHeaders });
-                const valoresRes = await fetch('http://127.0.0.1:8000/api/v1/atividades/', { headers: apiHeaders });
+                const usuariosRes = await fetch(`http://${window.location.hostname}:8000/api/v1/usuarios/`, { headers: apiHeaders });
+                const indicadoresRes = await fetch(`http://${window.location.hostname}:8000/api/v1/indicadores/`, { headers: apiHeaders });
+                const valoresRes = await fetch(`http://${window.location.hostname}:8000/api/v1/atividades/`, { headers: apiHeaders });
                 
                 const setores = await setoresRes.json();
                 const usuarios = await usuariosRes.json();
@@ -532,7 +532,7 @@
             };
             
             try {
-                const res = await fetch('http://127.0.0.1:8000/api/v1/indicadores/', { method: 'POST', headers: apiHeaders, body: JSON.stringify(body) });
+                const res = await fetch(`http://${window.location.hostname}:8000/api/v1/indicadores/`, { method: 'POST', headers: apiHeaders, body: JSON.stringify(body) });
                 if (res.status === 401) {
                     alert("Sua sessão expirou. Faça login novamente.");
                     window.location.href = 'index.html';
@@ -567,7 +567,7 @@
                     data_cadastro: dataRegistro,
                     tipo_registro: 'lancamento'
                 };
-                const res = await fetch('http://127.0.0.1:8000/api/v1/atividades/', { method: 'POST', headers: apiHeaders, body: JSON.stringify(body) });
+                const res = await fetch(`http://${window.location.hostname}:8000/api/v1/atividades/`, { method: 'POST', headers: apiHeaders, body: JSON.stringify(body) });
                 if (res.status === 401) {
                     alert("Sua sessão expirou. Faça login novamente.");
                     window.location.href = 'index.html';
@@ -589,7 +589,7 @@
                 return;
             }
             try {
-                const res = await fetch(`http://127.0.0.1:8000/api/v1/atividades/${id}/`, { method: 'PATCH', headers: apiHeaders, body: JSON.stringify({ valor: floatVal }) });
+                const res = await fetch(`http://${window.location.hostname}:8000/api/v1/atividades/${id}/`, { method: 'PATCH', headers: apiHeaders, body: JSON.stringify({ valor: floatVal }) });
                 if(res.ok) {
                     mostrarAlerta("Lançamento atualizado com sucesso!");
                     fecharModal('modal-historico');
@@ -605,7 +605,7 @@
         window.deletarLancamento = async function(id) {
             if(!confirm("Tem certeza que deseja remover este lançamento? O total do indicador será recalculado.")) return;
             try {
-                const res = await fetch(`http://127.0.0.1:8000/api/v1/atividades/${id}/`, { method: 'DELETE', headers: apiHeaders });
+                const res = await fetch(`http://${window.location.hostname}:8000/api/v1/atividades/${id}/`, { method: 'DELETE', headers: apiHeaders });
                 if(res.ok) {
                     mostrarAlerta("Lançamento removido com sucesso!");
                     fecharModal('modal-historico');

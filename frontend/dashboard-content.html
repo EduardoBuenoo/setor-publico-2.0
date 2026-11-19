@@ -138,10 +138,10 @@
         async function init() {
             try {
                 const [setoresRes, indRes, valRes, usrRes] = await Promise.all([
-                    fetch('http://127.0.0.1:8000/api/v1/setores/', { headers: apiHeaders }),
-                    fetch('http://127.0.0.1:8000/api/v1/indicadores/', { headers: apiHeaders }),
-                    fetch('http://127.0.0.1:8000/api/v1/atividades/', { headers: apiHeaders }),
-                    fetch('http://127.0.0.1:8000/api/v1/usuarios/', { headers: apiHeaders })
+                    fetch(`http://${window.location.hostname}:8000/api/v1/setores/`, { headers: apiHeaders }),
+                    fetch(`http://${window.location.hostname}:8000/api/v1/indicadores/`, { headers: apiHeaders }),
+                    fetch(`http://${window.location.hostname}:8000/api/v1/atividades/`, { headers: apiHeaders }),
+                    fetch(`http://${window.location.hostname}:8000/api/v1/usuarios/`, { headers: apiHeaders })
                 ]);
                 
                 rawSetores = await setoresRes.json();

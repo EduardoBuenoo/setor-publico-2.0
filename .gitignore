@@ -1,0 +1,38 @@
+# Ambientes virtuais e dependências
+.venv/
+venv/
+.deps/
+.deps-backend/
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Segredos e configuração local
+.env
+!.env.example
+
+# Banco de dados local (SQLite de teste) — gerado por `manage.py migrate`
+backend/db*.sqlite3
+*.sqlite3
+
+# Índice local do assistente documental (gerado por `python gafia_docs.py index`)
+.local_index/
+.index-build-*/
+.index-backup/
+
+# Documentos extras do assistente (somente o .gitkeep é versionado)
+documentos/*
+!documentos/.gitkeep
+
+# Cópias e backups de trabalho
+origem/
+scratch/
+*.zip
+
+# Sistema operacional / editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

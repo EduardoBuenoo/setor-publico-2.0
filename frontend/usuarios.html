@@ -482,6 +482,16 @@
 
             <div class="form-group">
 
+                <label class="form-label" for="visao_estrategica">
+                    <input type="checkbox" id="visao_estrategica" style="width:auto;vertical-align:middle;">
+                    Conceder visão estratégica (IC-01 a IC-04)
+                </label>
+
+            </div>
+
+
+            <div class="form-group">
+
                 <label class="form-label">
                     Senha Temporária
                 </label>
@@ -790,7 +800,7 @@
 <script>
 
 const API_URL =
-    'http://127.0.0.1:8000/api/v1';
+    `http://${window.location.hostname}:8000/api/v1`;
 
 
 const token =
@@ -1286,6 +1296,13 @@ function renderUsuarios() {
                 'Administrador'
             ) {
 
+                acoes += `
+                    <button class="btn btn-sm" onclick="alternarVisaoEstrategica(${usuario.id_usuario}, ${!usuario.visao_estrategica})"
+                        title="${usuario.visao_estrategica ? 'Revogar' : 'Conceder'} visão estratégica">
+                        ${usuario.visao_estrategica ? 'Revogar IC' : 'Conceder IC'}
+                    </button>
+                `;
+
                 if (
                     usuario.id_usuario !==
                     user.id_usuario
@@ -1506,6 +1523,9 @@ document
                         )
                         .value,
 
+                visao_estrategica:
+                    document.getElementById('visao_estrategica').checked,
+
                 senha:
                     document
                         .getElementById(
@@ -1584,6 +1604,22 @@ document
 // ========================================================
 // EXCLUIR
 // ========================================================
+
+window.alternarVisaoEstrategica = async function (id, conceder) {
+    if (user.nivel_acesso !== 'Administrador') return;
+    try {
+        const response = await fetch(`${API_URL}/usuarios/${id}/`, {
+            method: 'PATCH',
+            headers: { ...apiHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ visao_estrategica: conceder })
+        });
+        if (!response.ok) throw new Error(formatarErro(await response.json()));
+        mostrarAlerta(conceder ? 'Visão estratégica concedida.' : 'Visão estratégica revogada.');
+        await init();
+    } catch (error) {
+        mostrarAlerta(error.message, true);
+    }
+};
 
 window.excluirUsuario =
     async function (id) {
