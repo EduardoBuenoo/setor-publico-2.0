@@ -103,6 +103,7 @@
 
     </style>
 
+    <script src="assets/js/api.js"></script>
 </head>
 
 
@@ -147,36 +148,8 @@
         </li>
 
 
-        <li>
-
-            <a
-                href="oficios.html"
-                class="nav-link"
-            >
-
-                <i class="fa-solid fa-file-signature"></i>
-
-                Ofícios
-
-            </a>
-
-        </li>
 
 
-        <li>
-
-            <a
-                href="projetos.html"
-                class="nav-link"
-            >
-
-                <i class="fa-solid fa-project-diagram"></i>
-
-                Projetos
-
-            </a>
-
-        </li>
 
 
         <li>
@@ -545,7 +518,7 @@
 <script>
 
 const API_URL =
-    `http://${window.location.hostname}:8000/api/v1`;
+    Sigdei.base;
 
 
 const token =

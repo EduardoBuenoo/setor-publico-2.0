@@ -175,6 +175,7 @@
 
     </style>
 
+    <script src="assets/js/api.js"></script>
 </head>
 
 
@@ -218,26 +219,8 @@
         </li>
 
 
-        <li>
-            <a
-                href="oficios.html"
-                class="nav-link"
-            >
-                <i class="fa-solid fa-file-signature"></i>
-                Ofícios
-            </a>
-        </li>
 
 
-        <li>
-            <a
-                href="projetos.html"
-                class="nav-link"
-            >
-                <i class="fa-solid fa-project-diagram"></i>
-                Projetos
-            </a>
-        </li>
 
 
         <li>
@@ -471,6 +454,8 @@
                         Gestor
                     </option>
 
+                    <option value="Secretário">Secretário</option>
+
                     <option value="Administrador">
                         Administrador
                     </option>
@@ -484,7 +469,7 @@
 
                 <label class="form-label" for="visao_estrategica">
                     <input type="checkbox" id="visao_estrategica" style="width:auto;vertical-align:middle;">
-                    Conceder visão estratégica (IC-01 a IC-04)
+                    Conceder visão estratégica
                 </label>
 
             </div>
@@ -709,98 +694,10 @@
 </div>
 
 
-<!-- =====================================================
-     MODAL SENHA
-====================================================== -->
-
-<div
-    id="modal-senha"
-    class="modal-overlay"
->
-
-<div class="modal-box">
-
-
-    <div class="modal-header">
-
-        <h3>
-            <i class="fa-solid fa-key"></i>
-            Redefinir Senha
-        </h3>
-
-        <button
-            class="close-btn"
-            id="btn-fechar-modal"
-        >
-            ×
-        </button>
-
-    </div>
-
-
-    <div class="modal-body">
-
-
-        <p style="margin-bottom:1rem;">
-
-            Usuário:
-
-            <strong id="nome_usuario_modal">
-            </strong>
-
-        </p>
-
-
-        <form id="form-reset">
-
-
-            <input
-                type="hidden"
-                id="id_usuario_reset"
-            >
-
-
-            <div class="form-group">
-
-                <label>
-                    Nova Senha
-                </label>
-
-                <input
-                    type="password"
-                    id="nova_senha_reset"
-                    class="form-control"
-                    required
-                    style="
-                        color:#26364a;
-                        background:white;
-                    "
-                >
-
-            </div>
-
-
-            <button
-                type="submit"
-                class="btn btn-primary"
-            >
-                Salvar Nova Senha
-            </button>
-
-
-        </form>
-
-    </div>
-
-</div>
-
-</div>
-
-
 <script>
 
 const API_URL =
-    `http://${window.location.hostname}:8000/api/v1`;
+    Sigdei.base;
 
 
 const token =
@@ -1052,7 +949,7 @@ async function init() {
             );
 
 
-        selectCadastro.innerHTML = '';
+        selectCadastro.replaceChildren();
 
         selectFiltro.innerHTML =
             '<option value="todos">Todos</option>';
@@ -1067,20 +964,8 @@ async function init() {
                     setor.nome;
 
 
-                selectCadastro.innerHTML +=
-                    `
-                    <option value="${setor.id_setor}">
-                        ${setor.nome}
-                    </option>
-                    `;
-
-
-                selectFiltro.innerHTML +=
-                    `
-                    <option value="${setor.id_setor}">
-                        ${setor.nome}
-                    </option>
-                    `;
+                selectCadastro.append(new Option(setor.nome, setor.id_setor));
+                selectFiltro.append(new Option(setor.nome, setor.id_setor));
 
             }
         );
@@ -1132,6 +1017,12 @@ async function init() {
 // ========================================================
 // RENDERIZAR USUÁRIOS
 // ========================================================
+
+function htmlText(text) {
+    const node = document.createElement('span');
+    node.textContent = text;
+    return node.innerHTML;
+}
 
 function renderUsuarios() {
 
@@ -1263,8 +1154,7 @@ function renderUsuarios() {
                 'Não informado';
 
 
-            let nivel =
-                usuario.nivel_acesso;
+            let nivel = htmlText(usuario.nivel_acesso);
 
 
             if (
@@ -1333,17 +1223,17 @@ function renderUsuarios() {
                 <tr>
 
                     <td>
-                        ${usuario.matricula}
+                        ${htmlText(usuario.matricula)}
                     </td>
 
                     <td>
                         <strong>
-                            ${usuario.nome}
+                            ${htmlText(usuario.nome)}
                         </strong>
                     </td>
 
                     <td>
-                        ${usuario.funcao || '-'}
+                        ${htmlText(usuario.funcao || '-')}
                     </td>
 
                     <td>
@@ -1353,7 +1243,7 @@ function renderUsuarios() {
                                 status-encerrado
                             "
                         >
-                            ${setor}
+                            ${htmlText(setor)}
                         </span>
                     </td>
 
@@ -1370,19 +1260,6 @@ function renderUsuarios() {
 
         }
     );
-
-}
-
-
-// ========================================================
-// ESCAPAR TEXTO PARA BOTÃO
-// ========================================================
-
-function escaparTexto(texto) {
-
-    return String(texto || '')
-        .replace(/\\/g, '\\\\')
-        .replace(/'/g, "\\'");
 
 }
 
@@ -1615,6 +1492,12 @@ window.alternarVisaoEstrategica = async function (id, conceder) {
         });
         if (!response.ok) throw new Error(formatarErro(await response.json()));
         mostrarAlerta(conceder ? 'Visão estratégica concedida.' : 'Visão estratégica revogada.');
+        if (Number(id) === Number(user.id_usuario)) {
+            user.visao_estrategica = conceder;
+            localStorage.setItem('user', JSON.stringify(user));
+            window.top.location.reload();
+            return;
+        }
         await init();
     } catch (error) {
         mostrarAlerta(error.message, true);
@@ -1711,70 +1594,6 @@ window.excluirUsuario =
 
     };
 
-
-// ========================================================
-// MODAL
-// ========================================================
-
-window.abrirModalSenha =
-    function (id, nome) {
-
-        document
-            .getElementById(
-                'id_usuario_reset'
-            )
-            .value =
-                id;
-
-
-        document
-            .getElementById(
-                'nome_usuario_modal'
-            )
-            .textContent =
-                nome;
-
-
-        document
-            .getElementById(
-                'modal-senha'
-            )
-            .classList
-            .add('active');
-
-    };
-
-
-function fecharModal() {
-
-    document
-        .getElementById(
-            'modal-senha'
-        )
-        .classList
-        .remove('active');
-
-
-    document
-        .getElementById(
-            'form-reset'
-        )
-        .reset();
-
-}
-
-
-document
-    .getElementById(
-        'btn-fechar-modal'
-    )
-    .addEventListener(
-        'click',
-        fecharModal
-    );
-
-
-// RN03: redefinição de senha por administrador removida.
 
 // ========================================================
 // FORMATAR ERRO DA API

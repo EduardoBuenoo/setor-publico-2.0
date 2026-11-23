@@ -1,92 +1,67 @@
-(function () {
-    const token = localStorage.getItem('jwt_token');
-    const user = JSON.parse(localStorage.getItem('user') || 'null');
-    if (!token || !user) { window.top.location.replace('index.html'); return; }
-
-    const apiBase = `http://${window.location.hostname}:8000/api/v1`;
-    const status = document.getElementById('assistant-status');
-    const messages = document.getElementById('assistant-messages');
-    const form = document.getElementById('assistant-form');
-    const question = document.getElementById('assistant-question');
-    const button = document.getElementById('assistant-send');
-    const start = document.getElementById('assistant-start');
-    const end = document.getElementById('assistant-end');
-    const headers = { Authorization: `Bearer ${token}` };
-
-    const strategicBadge = document.getElementById('assistant-strategic-badge');
-    if (strategicBadge && !user.visao_estrategica) strategicBadge.hidden = true;
-
-    const today = new Date();
-    const localDate = value => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
-    start.value = localDate(new Date(today.getFullYear(), today.getMonth() - 1, 1));
-    end.value = localDate(today);
-
-    async function refreshStatus() {
-        try {
-            const response = await fetch(`${apiBase}/assistente/status/`, { headers });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.detail || data.erro || 'Acesso indisponível.');
-            const documents = data.documentos_prontos
-                ? `${data.arquivos} arquivo(s) indexado(s)`
-                : 'documentos ainda não indexados';
-            status.textContent = `${data.mensagem} Modelo: ${data.modelo}. Fontes: dados autorizados e ${documents}.`;
-        } catch (error) {
-            status.textContent = `RAG indisponível: ${error.message}`;
-        }
-    }
+(() => {
+    const { api, session, today, element, date } = Sigdei;
+    const user = session();
+    if (!user) return;
+    const get = id => document.getElementById(id);
+    const status = get('assistant-status');
+    const messages = get('assistant-messages');
+    const form = get('assistant-form');
+    const question = get('assistant-question');
+    const button = get('assistant-send');
+    const start = get('assistant-start');
+    const end = get('assistant-end');
+    const source = get('assistant-source');
+    get('assistant-source-label').hidden = !['Administrador', 'Gestor'].includes(user.nivel_acesso);
+    start.value = `${today().slice(0, 4)}-01-01`;
+    end.value = today();
+    start.max = end.max = today();
 
     function sourceLabel(item) {
-        if (item.tipo === 'documento' || item.arquivo) {
-            return `${item.arquivo || item.rotulo}${item.pagina ? `, página ${item.pagina}` : ''}`;
-        }
-        const period = item.periodo ? `, ${item.periodo.inicio} a ${item.periodo.fim}` : '';
-        const sector = item.setor ? `, ${item.setor}` : '';
-        return `${item.rotulo || item.indicador || item.referencia}${sector}${period}`;
+        if (item.arquivo) return `${item.arquivo}${item.pagina ? `, página ${item.pagina}` : ''}`;
+        const period = item.periodo ? `, de ${date(item.periodo.inicio)} a ${date(item.periodo.fim)}` : '';
+        return `${item.rotulo || item.indicador || item.referencia}${period}`;
     }
-
-    function addMessage(role, content, sources) {
-        const box = document.createElement('article');
-        box.className = `assistant-message ${role}`;
-        const label = document.createElement('strong');
-        label.textContent = role === 'user' ? 'VOCÊ' : 'ASSISTENTE RAG';
-        const text = document.createElement('div');
-        text.textContent = content;
-        box.append(label, text);
-        if (sources && sources.length) {
-            const footer = document.createElement('div');
-            footer.className = 'assistant-sources';
-            footer.textContent = `Fontes recuperadas: ${sources.map(sourceLabel).join(' · ')}`;
-            box.append(footer);
-        }
+    function addMessage(role, content, sources = []) {
+        const box = element('article', undefined, `assistant-message ${role}`);
+        box.append(element('strong', role === 'user' ? 'Você' : 'Assistente'), element('div', content));
+        if (sources.length) box.append(element('div', sources.map(sourceLabel).join('\n'), 'assistant-sources'));
         messages.append(box);
         box.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
-
+    async function refreshStatus() {
+        const documents = source.value === 'documentos';
+        start.disabled = end.disabled = documents;
+        try {
+            const data = await api(documents ? '/documentos/status/' : '/assistente/status/');
+            status.textContent = data.mensagem;
+            if (data.classificador_configurado) status.textContent += ` Classificador configurado (${data.modo}).`;
+        } catch (error) {
+            status.textContent = error.message;
+        }
+    }
+    source.addEventListener('change', refreshStatus);
     form.addEventListener('submit', async event => {
         event.preventDefault();
         const text = question.value.trim();
         if (!text) return;
         addMessage('user', text);
-        question.value = '';
-        button.disabled = true;
-        status.textContent = 'Recuperando contexto autorizado e gerando a resposta…';
+        const documents = source.value === 'documentos';
+        button.disabled = source.disabled = true;
+        status.textContent = 'Consultando fontes autorizadas…';
         try {
-            const response = await fetch(`${apiBase}/assistente/perguntar/`, {
-                method: 'POST',
-                headers: { ...headers, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pergunta: text, inicio: start.value, fim: end.value })
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.erro || data.detail || 'Falha na consulta.');
-            addMessage('assistant', data.resposta, data.fontes);
+            const path = documents ? '/documentos/perguntar/' : '/assistente/perguntar/';
+            const data = { pergunta: text };
+            if (!documents) Object.assign(data, { inicio: start.value, fim: end.value });
+            const response = await api(path, { method: 'POST', data });
+            addMessage('assistant', response.resposta, response.fontes);
+            question.value = '';
         } catch (error) {
-            addMessage('assistant', `Não foi possível responder: ${error.message}`);
+            addMessage('assistant', error.message);
         } finally {
-            button.disabled = false;
+            button.disabled = source.disabled = false;
             refreshStatus();
             question.focus();
         }
     });
-
     refreshStatus();
 })();

@@ -1,0 +1,15 @@
+.git
+.github
+.env
+.venv
+**/__pycache__
+**/*.sqlite3
+**/staticfiles
+.local_index
+.index-build-*
+.index-backup
+documentos/*
+!documentos/.gitkeep
+frontend
+compose.yaml
+.env.example

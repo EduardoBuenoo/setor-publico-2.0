@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     SectorCreateListView,
     SectorRetrieveUpdateDestroyView,
-    IndicadorCreateListView,
+    IndicadorCreateListView, IndicadorDetailView, IndicadorHistoryView, DashboardView,
     AtividadeCreateListView,
     AtividadeRetrieveUpdateDestroyView,
     EmpresaCreateListView,
@@ -15,6 +15,9 @@ urlpatterns = [
     path('setores/', SectorCreateListView.as_view(), name='sector-create-list'),
     path('setores/<int:pk>/', SectorRetrieveUpdateDestroyView.as_view(), name='sector-detail-view'),
     path('indicadores/', IndicadorCreateListView.as_view(), name='indicador-create-list'),
+    path('indicadores/<int:pk>/', IndicadorDetailView.as_view(), name='indicador-detail'),
+    path('indicadores/<int:pk>/historico/', IndicadorHistoryView.as_view(), name='indicador-history'),
+    path('dashboard/', DashboardView.as_view(), name='dashboard'),
     path('atividades/', AtividadeCreateListView.as_view(), name='atividade-create-list'),
     path('atividades/<int:pk>/', AtividadeRetrieveUpdateDestroyView.as_view(), name='atividade-detail'),
 ]

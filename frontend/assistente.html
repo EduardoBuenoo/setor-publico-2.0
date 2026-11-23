@@ -30,23 +30,21 @@
     [hidden] { display: none !important; }
   </style>
   <script src="assets/js/assistente.js" defer></script>
+    <script src="assets/js/api.js"></script>
 </head>
 <body>
   <main class="assistant-page">
     <div class="assistant-heading">
-      <h1>Assistente RAG</h1>
-      <p>Faça uma pergunta em linguagem natural. A IA recupera automaticamente documentos e dados autorizados do SIGDEI antes de responder.</p>
-      <div class="assistant-badges" aria-label="Fontes consultadas automaticamente">
-        <span class="assistant-badge">Documentos</span>
-        <span class="assistant-badge">Indicadores</span>
-        <span class="assistant-badge">Projetos</span>
-        <span id="assistant-strategic-badge" class="assistant-badge">IC-01 a IC-04</span>
-      </div>
+      <h1>Assistente SIGDEI</h1>
+      <p>Consulte indicadores, atendimentos, crédito e vagas por período.</p>
     </div>
-    <span id="assistant-status" class="assistant-status" role="status">Verificando o RAG local…</span>
+    <span id="assistant-status" class="assistant-status" role="status">Carregando assistente…</span>
     <section id="assistant-messages" class="assistant-messages" aria-live="polite"></section>
     <form id="assistant-form" class="assistant-form">
       <div class="assistant-controls">
+        <label id="assistant-source-label" hidden>Fonte
+          <select id="assistant-source"><option value="dados">Dados do SIGDEI</option><option value="documentos">Documentos locais</option></select>
+        </label>
         <label for="assistant-start">Período dos dados — de
           <input id="assistant-start" type="date" required>
         </label>

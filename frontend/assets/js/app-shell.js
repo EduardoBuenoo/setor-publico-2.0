@@ -14,8 +14,8 @@
     document.getElementById('shell-user-role').textContent = user.nivel_acesso || '';
     document.getElementById('shell-user-avatar').textContent = (user.nome || 'U').charAt(0).toUpperCase();
     if (user.nivel_acesso === 'Administrador' || user.nivel_acesso === 'Gestor') document.getElementById('shell-menu-usuarios').style.display = 'block';
-    if (['Administrador', 'Gestor', 'Secretário'].includes(user.nivel_acesso)) document.getElementById('shell-menu-assistente').style.display = 'block';
-    if (user.visao_estrategica) document.getElementById('shell-menu-cruzados').style.display = 'block';
+    if (['Administrador', 'Gestor'].includes(user.nivel_acesso) || (user.nivel_acesso === 'Secretário' && user.visao_estrategica)) document.getElementById('shell-menu-assistente').style.display = 'block';
+    if (['Administrador', 'Gestor', 'Secretário'].includes(user.nivel_acesso) && user.visao_estrategica) document.getElementById('shell-menu-cruzados').style.display = 'block';
 
     function setSidebarCollapsed(collapsed) {
         document.body.classList.toggle('sidebar-collapsed', collapsed);
@@ -24,7 +24,8 @@
         sidebarToggle.setAttribute('title', collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral');
         localStorage.setItem('sigdei_sidebar_collapsed', String(collapsed));
     }
-    setSidebarCollapsed(localStorage.getItem('sigdei_sidebar_collapsed') === 'true');
+    const storedSidebar = localStorage.getItem('sigdei_sidebar_collapsed');
+    setSidebarCollapsed(storedSidebar === null ? matchMedia('(max-width: 700px)').matches : storedSidebar === 'true');
     sidebarToggle.addEventListener('click', () => setSidebarCollapsed(!document.body.classList.contains('sidebar-collapsed')));
 
     function viewUrl(href) { return `${href}${href.includes('?') ? '&' : '?'}embedded=1`; }
@@ -34,8 +35,9 @@
         title.textContent = active ? active.dataset.title : 'SIGDEI';
     }
     function navigate(href, updateHistory = true) {
+        const link = links.find(item => item.getAttribute('href') === href && item.parentElement.style.display !== 'none');
+        if (!link || pendingFrame) return;
         selectLink(href);
-        if (pendingFrame) return;
         pendingFrame = frames.find(frame => frame !== activeFrame);
         workspace.classList.add('is-loading');
         pendingFrame.classList.add('is-loading');
@@ -71,7 +73,7 @@
             activeFrame = frame;
             pendingFrame = null;
             setTimeout(() => {
-                previousFrame.src = 'about:blank';
+                if (previousFrame !== activeFrame && previousFrame !== pendingFrame) previousFrame.src = 'about:blank';
                 workspace.classList.remove('is-loading');
             }, 220);
         });

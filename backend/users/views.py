@@ -1,6 +1,7 @@
 import bcrypt
 
 from django.core import signing
+from django.db.models.deletion import ProtectedError
 
 from rest_framework import generics
 from rest_framework.views import APIView
@@ -40,7 +41,7 @@ class UsersCreateListView(generics.ListCreateAPIView):
             return Users.objects.all()
 
         # Gestor visualiza apenas seu setor
-        if usuario.nivel_acesso == 'Gestor':
+        if usuario.nivel_acesso == 'Gestor' and usuario.id_setor_id:
             return Users.objects.filter(
                 id_setor=usuario.id_setor
             )
@@ -85,7 +86,7 @@ class UsersRetrieveUpdateDestroyView(
         return Users.objects.filter(id_usuario=usuario.id_usuario)
 
     def update(self, request, *args, **kwargs):
-        alvo = self.get_object()
+        self.get_object()
 
         # RN03: senha nunca pode ser alterada pela rota genérica de usuários.
         # O próprio usuário usa /usuarios/alterar-senha/ ou a recuperação.
@@ -133,11 +134,10 @@ class UsersRetrieveUpdateDestroyView(
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        return super().destroy(
-            request,
-            *args,
-            **kwargs
-        )
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError:
+            return Response({'error': 'O usuário possui atendimentos vinculados.'}, status=status.HTTP_409_CONFLICT)
 
 
 # =========================================================
@@ -148,13 +148,14 @@ class UsersRetrieveUpdateDestroyView(
 class CustomLoginView(APIView):
 
     permission_classes = [AllowAny]
+    throttle_scope = 'login'
 
     def post(self, request):
 
         matricula = request.data.get('matricula')
         senha = request.data.get('senha')
 
-        if not matricula or not senha:
+        if not isinstance(matricula, str) or not isinstance(senha, str) or not matricula or not senha:
 
             return Response(
                 {
@@ -180,10 +181,13 @@ class CustomLoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-        if not bcrypt.checkpw(
-            senha.encode('utf-8'),
-            user.senha_hash.encode('utf-8')
-        ):
+        try:
+            valid = len(senha.encode('utf-8')) <= 72 and bcrypt.checkpw(
+                senha.encode('utf-8'), user.senha_hash.encode('utf-8'),
+            )
+        except ValueError:
+            valid = False
+        if not valid:
 
             return Response(
                 {
@@ -420,6 +424,7 @@ class AlterarSenhaPropriaView(APIView):
 
 
 class RecuperarSenhaPerguntaView(APIView):
+    throttle_scope = 'login'
 
     permission_classes = [AllowAny]
 
@@ -475,6 +480,7 @@ class RecuperarSenhaPerguntaView(APIView):
 
 
 class RecuperarSenhaVerificarView(APIView):
+    throttle_scope = 'login'
 
     permission_classes = [AllowAny]
 
@@ -560,6 +566,7 @@ class RecuperarSenhaVerificarView(APIView):
 
 
 class RecuperarSenhaRedefinirView(APIView):
+    throttle_scope = 'login'
 
     permission_classes = [AllowAny]
 

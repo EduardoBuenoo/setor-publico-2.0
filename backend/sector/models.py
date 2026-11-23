@@ -1,6 +1,8 @@
 from django.db import models
 from django.core.exceptions import ValidationError
-from datetime import date
+from django.db.models import Q
+from django.db.models.functions import Lower
+from django.utils.timezone import localdate
 
 from .cnpj import validate_cnpj
 
@@ -18,23 +20,70 @@ class Sector(models.Model):
         return self.nome
 
 class Indicador(models.Model):
+    QUANTIDADE = 'quantidade'
+    TEMPO = 'tempo'
+    PORCENTAGEM = 'porcentagem'
+    TIPOS = [(QUANTIDADE, 'Quantidade'), (TEMPO, 'Tempo'), (PORCENTAGEM, 'Porcentagem')]
+    PERIODICIDADES = [('diaria', 'Diária'), ('mensal', 'Mensal'),
+                      ('trimestral', 'Trimestral'), ('anual', 'Anual')]
+    SITUACOES = [('ativo', 'Ativo'), ('inativo', 'Inativo')]
+    CRITERIOS_META = [('minima', 'Mínima'), ('maxima', 'Máxima')]
+
     id_indicador = models.AutoField(primary_key=True)
-    id_setor = models.ForeignKey(Sector, on_delete=models.CASCADE, db_column='id_setor', null=True, blank=True)
+    id_setor = models.ForeignKey(Sector, on_delete=models.PROTECT, db_column='id_setor', null=True, blank=True)
     nome = models.CharField(max_length=255)
     tipo_dado = models.CharField(max_length=50)
+    descricao = models.TextField(blank=True)
+    unidade = models.CharField(max_length=40, blank=True)
+    periodicidade = models.CharField(max_length=12, choices=PERIODICIDADES, default='diaria')
+    meta = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    criterio_meta = models.CharField(max_length=8, choices=CRITERIOS_META, default='minima')
+    fonte = models.CharField(max_length=255, blank=True)
+    situacao = models.CharField(max_length=10, choices=SITUACOES, default='ativo')
+    legado = models.BooleanField(default=False, editable=False)
 
     class Meta:
         db_table = 'indicadores'
+        constraints = [
+            models.UniqueConstraint(Lower('nome'), 'id_setor', condition=Q(legado=False),
+                                    name='indicador_nome_setor_unico'),
+        ]
+
 
 class Atividade(models.Model):
     id_atividade = models.AutoField(primary_key=True)
-    id_indicador = models.ForeignKey(Indicador, on_delete=models.CASCADE, db_column='id_indicador', null=True, blank=True)
-    id_usuario = models.ForeignKey('users.Users', on_delete=models.CASCADE, db_column='id_usuario', null=True, blank=True)
+    id_indicador = models.ForeignKey(
+        Indicador, on_delete=models.PROTECT, db_column='id_indicador', null=True, blank=True,
+    )
+    id_usuario = models.ForeignKey(
+        'users.Users', on_delete=models.SET_NULL, db_column='id_usuario', null=True, blank=True,
+    )
     valor = models.DecimalField(max_digits=10, decimal_places=2)
+    # A coluna existente representa a referência, inclusive para os lançamentos legados.
     data_cadastro = models.DateField()
+    legado = models.BooleanField(default=False, editable=False)
 
     class Meta:
         db_table = 'atividades'
+        indexes = [models.Index(fields=['id_indicador', 'data_cadastro'], name='atividade_ind_data_idx')]
+        constraints = [
+            models.UniqueConstraint(fields=['id_indicador', 'data_cadastro'],
+                                    condition=Q(legado=False), name='atividade_referencia_unica'),
+            models.CheckConstraint(condition=Q(legado=True) | Q(valor__gte=0), name='atividade_valor_positivo'),
+        ]
+
+
+class HistoricoIndicador(models.Model):
+    indicador = models.ForeignKey(Indicador, on_delete=models.PROTECT, related_name='historico')
+    autor = models.ForeignKey('users.Users', null=True, on_delete=models.SET_NULL)
+    evento = models.CharField(max_length=24)
+    data_hora = models.DateTimeField(auto_now_add=True)
+    anterior = models.JSONField(null=True)
+    atual = models.JSONField(null=True)
+
+    class Meta:
+        ordering = ['-data_hora', '-pk']
+        indexes = [models.Index(fields=['indicador', '-data_hora'], name='indicador_historico_idx')]
 
 
 class Empresa(models.Model):
@@ -74,10 +123,15 @@ class Atendimento(models.Model):
     class Meta:
         db_table = 'atendimentos'
         ordering = ['data_atendimento', 'pk']
+        indexes = [
+            models.Index(fields=['data_atendimento', 'setor', 'empresa'], name='atend_data_setor_empresa'),
+            models.Index(fields=['tipo', 'data_liberacao', 'empresa'], name='atend_tipo_credito_empresa'),
+            models.Index(fields=['tipo', 'data_abertura_vaga', 'empresa'], name='atend_tipo_vaga_empresa'),
+        ]
 
     def clean(self):
         errors = {}
-        if self.data_atendimento and self.data_atendimento > date.today():
+        if self.data_atendimento and self.data_atendimento > localdate():
             errors['data_atendimento'] = 'A data não pode estar no futuro.'
         sector_code = self.setor.codigo if self.setor_id else None
         expected = {self.SEBRAE: 'SEBRAE', self.CREDITO: 'BP', self.VAGA: 'PAT'}
@@ -90,7 +144,7 @@ class Atendimento(models.Model):
                 errors['data_liberacao'] = 'Informe a data da liberação.'
             elif self.data_atendimento and self.data_liberacao < self.data_atendimento:
                 errors['data_liberacao'] = 'A liberação deve ocorrer após o atendimento.'
-            elif self.data_liberacao > date.today():
+            elif self.data_liberacao > localdate():
                 errors['data_liberacao'] = 'A liberação não pode estar no futuro.'
         elif self.valor_credito is not None or self.data_liberacao is not None:
             errors['tipo'] = 'Dados de crédito exigem o tipo BP_LIBERACAO.'
@@ -101,7 +155,7 @@ class Atendimento(models.Model):
                 errors['data_abertura_vaga'] = 'Informe a data de abertura da vaga.'
             elif self.data_atendimento and self.data_abertura_vaga < self.data_atendimento:
                 errors['data_abertura_vaga'] = 'A abertura deve ocorrer após o atendimento.'
-            elif self.data_abertura_vaga > date.today():
+            elif self.data_abertura_vaga > localdate():
                 errors['data_abertura_vaga'] = 'A abertura não pode estar no futuro.'
         elif self.vagas is not None or self.data_abertura_vaga is not None:
             errors['tipo'] = 'Dados de vagas exigem o tipo PAT_VAGA.'
