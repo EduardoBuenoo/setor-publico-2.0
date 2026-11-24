@@ -20,11 +20,13 @@
     .message { min-height:1.5em; margin:12px 0; }
   </style>
   <script src="assets/js/atendimentos.js" defer></script>
+    <script src="assets/js/api.js"></script>
 </head>
 <body>
   <main>
     <h1>Registrar atendimento</h1>
-    <p>Busque a empresa pelo CNPJ. O mesmo cadastro é usado pelos setores para calcular IC-01 a IC-04.</p>
+    <p>Busque a empresa pelo CNPJ. O mesmo cadastro é usado pelos setores para calcular os indicadores cruzados.</p>
+    <p id="attendance-access" role="status"></p>
     <form id="company-form">
       <h2>Empresa</h2>
       <div class="grid"><label>CNPJ<input id="cnpj" required maxlength="18" autocomplete="off" placeholder="CNPJ numérico ou alfanumérico"></label></div>
@@ -32,9 +34,9 @@
       <div id="company-found" class="message" role="status"></div>
       <div id="company-new" hidden>
         <div class="grid">
-          <label>Razão social<input id="razao-social" maxlength="255"></label>
-          <label>Ramo de atividade<input id="ramo" maxlength="100"></label>
-          <label>Bairro<input id="bairro" maxlength="100"></label>
+          <label>Razão social<input id="razao-social" required maxlength="255"></label>
+          <label>Ramo de atividade<input id="ramo" required maxlength="100"></label>
+          <label>Bairro<input id="bairro" required maxlength="100"></label>
         </div>
         <button type="submit">Cadastrar empresa</button>
       </div>

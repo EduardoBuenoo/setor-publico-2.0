@@ -3,10 +3,13 @@ from rest_framework.exceptions import ValidationError
 
 
 def validar_senha(senha):
-    if not senha:
+    if not isinstance(senha, str) or not senha:
         raise ValidationError(
             "A senha é obrigatória."
         )
+
+    if len(senha.encode('utf-8')) > 72:
+        raise ValidationError('A senha deve ocupar até 72 bytes.')
 
     if len(senha) < 6:
         raise ValidationError(

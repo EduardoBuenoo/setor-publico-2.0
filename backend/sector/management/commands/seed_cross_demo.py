@@ -3,6 +3,7 @@
 from datetime import date
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
@@ -20,6 +21,8 @@ class Command(BaseCommand):
     help = 'Insere empresas e atendimentos [DEMO] de setembro e outubro de 2026.'
 
     def handle(self, *args, **options):
+        if not settings.SIGDEI_SHOW_DEMO_DATA:
+            raise CommandError('Habilite SIGDEI_SHOW_DEMO_DATA=1 somente no ambiente de demonstração.')
         if Empresa.objects.filter(razao_social__startswith='[DEMO]').exists():
             self.stdout.write('Empresas [DEMO] já existem; nenhum atendimento duplicado.')
             return
@@ -29,7 +32,7 @@ class Command(BaseCommand):
         sectors = {name: Sector.objects.filter(codigo=code).first()
                    for name, code in (('SEBRAE Aqui', 'SEBRAE'), ('Banco do Povo', 'BP'), ('PAT', 'PAT'))}
         if any(value is None for value in sectors.values()):
-            raise CommandError('Execute seed_demo antes de seed_cross_demo para criar os setores.')
+            raise CommandError('Execute bootstrap_setores para criar os setores.')
 
         journeys = [
             [('SEBRAE Aqui', 9, 10, Atendimento.SEBRAE, None, None),

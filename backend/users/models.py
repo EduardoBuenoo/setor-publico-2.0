@@ -18,7 +18,7 @@ class Users(models.Model):
 
     id_setor = models.ForeignKey(
         'sector.Sector',
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         db_column='id_setor',
         null=True,
         blank=True

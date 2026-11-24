@@ -1,73 +1,52 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Indicadores cruzados | SIGDEI</title>
-  <link rel="stylesheet" href="assets/css/style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="assets/css/indicadores-cruzados.css">
-  <script src="assets/js/indicadores-cruzados.js" defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Indicadores cruzados · SIGDEI</title>
+    <link rel="stylesheet" href="assets/css/gestao.css">
+    <script src="assets/js/api.js" defer></script>
+    <script src="assets/js/indicadores-cruzados.js" defer></script>
 </head>
-<body class="cross-page">
-  <main class="cross-shell">
-    <header class="cross-hero">
-      <div>
-        <span class="cross-kicker">Painel gerencial</span>
+<body class="gestao">
+<main>
+    <header>
         <h1>Indicadores cruzados</h1>
-        <p>Acompanhe a jornada das empresas entre SEBRAE Aqui, Banco do Povo e PAT.</p>
-      </div>
-      <button id="cross-export" class="cross-export" type="button"><i class="fa-regular fa-file-pdf"></i> Exportar PDF</button>
+        <p class="muted">Acompanhe empresas atendidas em diferentes setores e a sequência entre orientação, crédito e captação de vagas.</p>
     </header>
-
-    <section class="cross-filters" aria-label="Filtros do painel">
-      <label>Data inicial<input id="cross-start" type="date" required></label>
-      <label>Data final<input id="cross-end" type="date" required></label>
-      <button id="cross-apply" type="button"><i class="fa-solid fa-filter"></i> Aplicar período</button>
-      <span id="cross-status" role="status">Carregando indicadores…</span>
-    </section>
-
-    <section id="cross-cards" class="cross-cards" aria-label="Resumo dos indicadores"></section>
-
-    <section class="cross-grid">
-      <article class="cross-panel cross-chart-panel">
-        <div class="cross-panel-heading">
-          <div><span class="cross-kicker">Visão consolidada</span><h2>Impacto entre setores</h2></div>
-          <span id="cross-period-label" class="cross-period"></span>
-        </div>
-        <div id="cross-charts" class="cross-charts"></div>
-      </article>
-
-      <article class="cross-panel cross-story">
-        <span class="cross-kicker">Leitura do funil</span>
-        <h2>Da orientação ao emprego</h2>
-        <div class="cross-flow" aria-label="Fluxo SEBRAE, Banco do Povo e PAT">
-          <div><span>1</span><strong>SEBRAE Aqui</strong><small>orientação empresarial</small></div>
-          <i class="fa-solid fa-arrow-right"></i>
-          <div><span>2</span><strong>Banco do Povo</strong><small>crédito liberado</small></div>
-          <i class="fa-solid fa-arrow-right"></i>
-          <div><span>3</span><strong>PAT</strong><small>emprego e vagas</small></div>
-        </div>
-        <p>Os resultados são calculados automaticamente a partir dos atendimentos vinculados ao mesmo CNPJ e respeitam a ordem cronológica da jornada.</p>
-      </article>
-    </section>
-
-    <section class="cross-panel cross-table-panel">
-      <div class="cross-panel-heading">
-        <div><span class="cross-kicker">Detalhamento e auditoria</span><h2>Como cada indicador é calculado</h2></div>
-      </div>
-      <div class="cross-table-wrap">
-        <table>
-          <thead><tr><th>ID</th><th>Indicador</th><th>Resultado</th><th>Base do cálculo</th><th>Setores</th></tr></thead>
-          <tbody id="cross-table-body"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <div id="cross-denied" class="cross-denied" hidden>
-      <i class="fa-solid fa-lock"></i><h2>Visão estratégica necessária</h2>
-      <p>Este painel é restrito aos usuários que receberam permissão individual para consultar indicadores cruzados.</p>
+    <form id="cross-form" class="panel fields">
+        <label>De<input name="inicio" type="date" required></label>
+        <label>Até<input name="fim" type="date" required></label>
+        <div class="actions"><button type="submit">Aplicar período</button><button type="button" class="secondary" id="cross-print">Imprimir</button></div>
+    </form>
+    <p id="cross-status" class="status" role="status"></p>
+    <div id="cross-data" hidden>
+        <section class="panel">
+            <h2>Resultados e metodologia</h2>
+            <div class="scroll"><table>
+                <thead><tr><th>Indicador</th><th>Resultado</th><th>Fórmula, setores e fonte</th></tr></thead>
+                <tbody id="cross-table"></tbody>
+            </table></div>
+            <p class="status muted">Cada evento deve cair no período escolhido. A sequência demonstra associação entre registros. Vagas captadas podem permanecer em aberto.</p>
+        </section>
+        <section class="panel">
+            <h2>Evolução mensal</h2>
+            <div class="scroll"><table>
+                <thead><tr><th>Mês</th><th>Empresas atendidas</th><th>Empresas financiadas</th><th>Vagas captadas</th></tr></thead>
+                <tbody id="cross-series"></tbody>
+            </table></div>
+            <p id="series-empty" class="muted" hidden>Sem dados no período.</p>
+        </section>
+        <section class="panel">
+            <h2>Empresas presentes em dois ou mais setores</h2>
+            <p class="muted">Até 30 empresas, ordenadas pela quantidade de atendimentos no período.</p>
+            <div class="scroll"><table>
+                <thead><tr><th>Empresa</th><th>Setores</th><th>Atendimentos</th></tr></thead>
+                <tbody id="cross-companies"></tbody>
+            </table></div>
+            <p id="companies-empty" class="muted" hidden>Nenhum vínculo multissetorial encontrado no período.</p>
+        </section>
     </div>
-  </main>
+</main>
 </body>
 </html>

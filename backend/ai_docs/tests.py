@@ -1,27 +1,17 @@
 from types import SimpleNamespace
 from unittest.mock import patch
-
 from datetime import date
-from io import BytesIO
-from django.core.exceptions import ValidationError
-import json
 
+from django.core.exceptions import ValidationError
 from django.test import SimpleTestCase, TestCase
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from sector.models import Atividade, Indicador, Sector, Empresa, Atendimento
-from projects.models import Project, Tarefa
+from sector.models import Sector, Empresa, Atendimento
 from sector.cnpj import cnpj_check_digits
 from sector.cross_indicators import cross_snapshot
 from sector.serializers import EmpresaSerializer
-
-from .dashboard import ask_ollama, ask_cross_ollama, dashboard_snapshot, direct_cross_answer
-from .insights import ask_insights, raw_analysis_context
-from .rag import answer_with_context
-from .views import (AssistantQuestionView, DashboardQuestionView, DocumentQuestionView,
-                    DocumentStatusView, CrossIndicatorsView, CrossQuestionView,
-                    AIAnalysisQuestionView)
 from sector.views import AtendimentoCreateListView
+from .views import DocumentQuestionView, DocumentStatusView, CrossIndicatorsView, CrossQuestionView
 
 
 class DocumentRoutesTest(SimpleTestCase):
@@ -30,7 +20,7 @@ class DocumentRoutesTest(SimpleTestCase):
 
     def request_as(self, role, question="Quais são os objetivos?"):
         request = self.factory.post("/api/v1/documentos/perguntar/", {"pergunta": question}, format="json")
-        force_authenticate(request, user=SimpleNamespace(is_authenticated=True, nivel_acesso=role))
+        force_authenticate(request, user=SimpleNamespace(is_authenticated=True, nivel_acesso=role, pk=1))
         return request
 
     def test_collaborator_cannot_query_documents(self):
@@ -39,255 +29,22 @@ class DocumentRoutesTest(SimpleTestCase):
 
     def test_manager_receives_answer_with_sources(self):
         with (
-            patch("ai_docs.views.gafia_docs.index_status", return_value=(True, "Índice pronto.", 8)),
+            patch("ai_docs.views.documents.index_status", return_value=(True, "Índice pronto.", 8)),
             patch("ai_docs.views.get_index", return_value=object()),
-            patch("ai_docs.views.gafia_docs.answer", return_value={"resposta": "Texto", "fontes": []}),
+            patch("ai_docs.views.documents.answer", return_value={"resposta": "Texto", "fontes": []}),
         ):
             response = DocumentQuestionView.as_view()(self.request_as("Gestor"))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["resposta"], "Texto")
 
     def test_missing_index_is_reported(self):
-        with patch("ai_docs.views.gafia_docs.index_status", return_value=(False, "Reindexe.", 8)):
+        with patch("ai_docs.views.documents.index_status", return_value=(False, "Reindexe.", 8)):
             response = DocumentQuestionView.as_view()(self.request_as("Administrador"))
         self.assertEqual(response.status_code, 409)
 
     def test_status_requires_login(self):
         response = DocumentStatusView.as_view()(self.factory.get("/api/v1/documentos/status/"))
         self.assertEqual(response.status_code, 401)
-
-
-class UnifiedAssistantRoutesTest(SimpleTestCase):
-    def setUp(self):
-        self.factory = APIRequestFactory()
-
-    def request_as(self, role, strategic=False, question='O que os dados mostram?'):
-        request = self.factory.post('/api/v1/assistente/perguntar/', {
-            'pergunta': question,
-            'inicio': '2026-09-01', 'fim': '2026-10-01',
-        }, format='json')
-        force_authenticate(request, user=SimpleNamespace(
-            is_authenticated=True, nivel_acesso=role,
-            visao_estrategica=strategic, id_setor_id=1,
-        ))
-        return request
-
-    def test_collaborator_cannot_use_unified_assistant(self):
-        response = AssistantQuestionView.as_view()(self.request_as('Colaborador'))
-        self.assertEqual(response.status_code, 403)
-
-    def test_secretary_requires_strategic_permission(self):
-        response = AssistantQuestionView.as_view()(self.request_as('Secretário', False))
-        self.assertEqual(response.status_code, 403)
-
-    def test_manager_uses_single_rag_pipeline(self):
-        result = {'resposta': 'Resposta recuperada.', 'fontes': [], 'modo': 'rag'}
-        with (
-            patch('ai_docs.views.structured_passages', return_value=[{'referencia': 'x'}]),
-            patch('ai_docs.views.rank_passages', return_value=[{'referencia': 'x'}]),
-            patch('ai_docs.views.gafia_docs.index_status', return_value=(False, 'Ausente', 0)),
-            patch('ai_docs.views.answer_with_context', return_value=result) as rag,
-        ):
-            response = AssistantQuestionView.as_view()(self.request_as('Gestor'))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['modo'], 'rag')
-        rag.assert_called_once()
-
-    def test_cross_question_has_auditable_fallback_when_model_fails(self):
-        request = self.request_as(
-            'Administrador', True,
-            'Quantas empresas orientadas pelo SEBRAE chegaram ao crédito?',
-        )
-        fallback = {
-            'resposta': 'IC-01: 2 de 3 empresas chegaram ao crédito (66,67%).',
-            'fontes': [{'indicador_id': 'IC-01'}],
-        }
-        with (
-            patch('ai_docs.views.structured_passages', return_value=[]),
-            patch('ai_docs.views.rank_passages', return_value=[]),
-            patch('ai_docs.views.gafia_docs.index_status', return_value=(False, 'Ausente', 0)),
-            patch('ai_docs.views.answer_with_context', side_effect=RuntimeError('falha')),
-            patch('ai_docs.views.cross_snapshot', return_value=[]),
-            patch('ai_docs.views.direct_cross_answer', return_value=fallback),
-        ):
-            response = AssistantQuestionView.as_view()(request)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['modo'], 'rag_fallback_auditavel')
-
-    def test_rag_reports_retrieved_source_when_small_model_omits_references(self):
-        reply = {'message': {'content': json.dumps({
-            'resposta': 'O valor recuperado é 66,67%.', 'referencias': [],
-        })}}
-        passages = [{
-            'referencia': 'IC-01', 'texto': 'IC-01 valor 66,67%.',
-            'fonte': {'tipo': 'indicador_cruzado', 'rotulo': 'IC-01'},
-        }]
-        with patch('ai_docs.rag.urlopen', return_value=BytesIO(json.dumps(reply).encode())):
-            result = answer_with_context('Qual o IC-01?', date(2026, 9, 1),
-                                         date(2026, 10, 1), passages)
-        self.assertEqual(result['fontes'][0]['rotulo'], 'IC-01')
-
-    def test_rag_discards_unknown_reference_without_failing(self):
-        reply = {'message': {'content': json.dumps({
-            'resposta': 'O contexto recuperado não contém uma contagem autorizada.',
-            'referencias': ['IC-01-inexistente'],
-        })}}
-        passages = [{
-            'referencia': 'documento:1', 'texto': 'Trecho autorizado.',
-            'fonte': {'tipo': 'documento', 'arquivo': 'manual.pdf'},
-        }]
-        with patch('ai_docs.rag.urlopen', return_value=BytesIO(json.dumps(reply).encode())):
-            result = answer_with_context('Pergunta', date(2026, 9, 1),
-                                         date(2026, 10, 1), passages)
-        self.assertEqual(result['fontes'][0]['arquivo'], 'manual.pdf')
-
-
-class DashboardRoutesTest(SimpleTestCase):
-    def setUp(self):
-        self.factory = APIRequestFactory()
-
-    def request_as(self, role):
-        request = self.factory.post(
-            "/api/v1/dashboard/perguntar/",
-            {"pergunta": "Quais indicadores tiveram lançamentos?", "inicio": "2026-01-01", "fim": "2026-01-31"},
-            format="json",
-        )
-        force_authenticate(request, user=SimpleNamespace(is_authenticated=True, nivel_acesso=role))
-        return request
-
-    def test_collaborator_cannot_query_dashboard(self):
-        response = DashboardQuestionView.as_view()(self.request_as("Colaborador"))
-        self.assertEqual(response.status_code, 403)
-
-    def test_empty_period_does_not_call_model(self):
-        with (
-            patch("ai_docs.views.dashboard_snapshot", return_value=[]),
-            patch("ai_docs.views.ask_ollama") as model,
-        ):
-            response = DashboardQuestionView.as_view()(self.request_as("Gestor"))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["fontes"], [])
-        model.assert_not_called()
-
-    def test_model_sources_are_built_from_authorized_snapshot(self):
-        indicators = [{
-            "id": 7, "nome": "Atendimentos", "tipo": "Número", "setor": "PAT",
-            "soma_lancamentos": "4", "quantidade_lancamentos": 2,
-            "historico_mensal": [{"mes": "2026-01", "soma": "4"}],
-        }]
-        reply = {"message": {"content": json.dumps({
-            "resposta": "Foram lançados 4.", "indicadores_usados": [7],
-        })}}
-        with patch("ai_docs.dashboard.urlopen", return_value=BytesIO(json.dumps(reply).encode())):
-            result = ask_ollama("Quantos?", date(2026, 1, 1), date(2026, 1, 31), indicators)
-        self.assertEqual(result["fontes"][0]["setor"], "PAT")
-        self.assertEqual(result["fontes"][0]["periodo"]["inicio"], "2026-01-01")
-
-    def test_model_cannot_cite_other_indicator(self):
-        reply = {"message": {"content": json.dumps({
-            "resposta": "Outro indicador.", "indicadores_usados": [999],
-        })}}
-        with patch("ai_docs.dashboard.urlopen", return_value=BytesIO(json.dumps(reply).encode())):
-            with self.assertRaises(RuntimeError):
-                ask_ollama("Quantos?", date(2026, 1, 1), date(2026, 1, 31), [{"id": 7}])
-
-
-class DashboardDataIsolationTest(TestCase):
-    def test_manager_only_receives_own_sector(self):
-        first = Sector.objects.create(nome="Setor A")
-        second = Sector.objects.create(nome="Setor B")
-        first_indicator = Indicador.objects.create(nome="A", tipo_dado="Número", id_setor=first)
-        second_indicator = Indicador.objects.create(nome="B", tipo_dado="Número", id_setor=second)
-        Atividade.objects.create(id_indicador=first_indicator, valor=10, data_cadastro=date(2026, 1, 5))
-        Atividade.objects.create(id_indicador=second_indicator, valor=20, data_cadastro=date(2026, 1, 6))
-        manager = SimpleNamespace(nivel_acesso="Gestor", id_setor_id=first.id_setor)
-
-        result = dashboard_snapshot(manager, date(2026, 1, 1), date(2026, 1, 31))
-
-        self.assertEqual([item["id"] for item in result], [first_indicator.id_indicador])
-        self.assertEqual(result[0]["soma_lancamentos"], "10")
-
-
-class AIAnalysisTest(TestCase):
-    def setUp(self):
-        self.first = Sector.objects.create(nome='Setor A')
-        self.second = Sector.objects.create(nome='Setor B')
-        self.first_indicator = Indicador.objects.create(nome='Atendimentos A', tipo_dado='Número', id_setor=self.first)
-        self.second_indicator = Indicador.objects.create(nome='Atendimentos B', tipo_dado='Número', id_setor=self.second)
-        self.activity = Atividade.objects.create(id_indicador=self.first_indicator, valor=10,
-                                                  data_cadastro=date(2026, 10, 5))
-        Atividade.objects.create(id_indicador=self.second_indicator, valor=20,
-                                 data_cadastro=date(2026, 10, 6))
-        self.project = Project.objects.create(nome='Projeto A', data_inicio=date(2026, 9, 1),
-                                               data_fim=date(2026, 10, 31), status_tag='Em andamento',
-                                               id_setor=self.first)
-        Project.objects.create(nome='Projeto B', data_inicio=date(2026, 9, 1),
-                               data_fim=date(2026, 10, 31), status_tag='Em andamento',
-                               id_setor=self.second)
-        self.task = Tarefa.objects.create(id_projeto=self.project, nome_tarefa='Entrega A',
-                                         responsavel_nome='Teste', data_inicio=date(2026, 9, 1),
-                                         data_final=date(2026, 10, 20), concluida=False)
-        self.manager = SimpleNamespace(nivel_acesso='Gestor', id_setor_id=self.first.pk,
-                                       is_authenticated=True)
-
-    def context(self):
-        return raw_analysis_context(self.manager, date(2026, 9, 1), date(2026, 10, 31))
-
-    def test_manager_context_contains_only_own_sector_and_no_personal_data(self):
-        context = self.context()
-        self.assertEqual([item['indicador'] for item in context['lancamentos']], ['Atendimentos A'])
-        self.assertEqual([item['nome'] for item in context['projetos']], ['Projeto A'])
-        self.assertEqual(context['projetos'][0]['tarefas'][0]['referencia'], f'tarefa:{self.task.pk}')
-        self.assertNotIn('responsavel_nome', json.dumps(context))
-        self.assertNotIn('cnpj', json.dumps(context))
-
-    def test_model_answer_uses_only_authorized_references(self):
-        reference = f'atividade:{self.activity.pk}'
-        reply = {'message': {'content': json.dumps({
-            'resposta': 'Há um lançamento no período, mas o histórico disponível é insuficiente para apontar uma tendência confiável.',
-            'referencias': [reference],
-        })}}
-        with patch('ai_docs.insights.urlopen', return_value=BytesIO(json.dumps(reply).encode())) as model:
-            result = ask_insights('Há tendência?', date(2026, 9, 1), date(2026, 10, 31), self.context())
-        self.assertEqual(result['natureza'], 'exploratoria')
-        self.assertEqual(result['fontes'][0]['referencia'], reference)
-
-    def test_project_analysis_keeps_task_dates_without_task_names(self):
-        reply = {'message': {'content': json.dumps({
-            'resposta': 'O prazo do projeto deve ser conferido com as tarefas pendentes; um mês de registros não permite previsão confiável.',
-            'referencias': [f'projeto:{self.project.pk}'],
-        })}}
-        with patch('ai_docs.insights.urlopen', return_value=BytesIO(json.dumps(reply).encode())) as model:
-            ask_insights('Há risco de atraso no projeto?', date(2026, 9, 1), date(2026, 10, 31), self.context())
-        payload = model.call_args.args[0].data.decode('utf-8')
-        self.assertNotIn('Entrega A', payload)
-        self.assertIn(f'tarefa:{self.task.pk}', payload)
-
-    def test_model_cannot_cite_another_sector(self):
-        reply = {'message': {'content': json.dumps({
-            'resposta': 'Setor B tem risco alto.', 'referencias': ['atividade:999'],
-        })}}
-        with patch('ai_docs.insights.urlopen', return_value=BytesIO(json.dumps(reply).encode())):
-            with self.assertRaises(RuntimeError):
-                ask_insights('Há risco?', date(2026, 9, 1), date(2026, 10, 31), self.context())
-
-    def test_model_indicator_name_resolves_to_authorized_rows(self):
-        reply = {'message': {'content': json.dumps({
-            'resposta': 'O indicador possui um lançamento no período, o que é insuficiente para afirmar tendência ou anomalia confiável.',
-            'referencias': ['Atendimentos A'],
-        })}}
-        with patch('ai_docs.insights.urlopen', return_value=BytesIO(json.dumps(reply).encode())):
-            result = ask_insights('Há tendência em Atendimentos A?', date(2026, 9, 1),
-                                  date(2026, 10, 31), self.context())
-        self.assertEqual([item['referencia'] for item in result['fontes']],
-                         [f'atividade:{self.activity.pk}'])
-
-    def test_collaborator_cannot_use_analysis(self):
-        request = APIRequestFactory().post('/api/v1/analise-ia/perguntar/', {
-            'pergunta': 'Há risco?', 'inicio': '2026-09-01', 'fim': '2026-10-31',
-        }, format='json')
-        force_authenticate(request, user=SimpleNamespace(is_authenticated=True, nivel_acesso='Colaborador'))
-        self.assertEqual(AIAnalysisQuestionView.as_view()(request).status_code, 403)
 
 
 class CrossIndicatorTest(TestCase):
@@ -356,6 +113,21 @@ class CrossIndicatorTest(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertIn('cnpj', serializer.errors)
 
+    def test_api_registers_formatted_cnpj(self):
+        from rest_framework.test import APIClient
+
+        base = 'ZZZZZZZZ0022'
+        cnpj = base + cnpj_check_digits(base)
+        formatted = f'{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:]}'
+        client = APIClient()
+        client.force_authenticate(self.admin)
+        data = {'cnpj': formatted, 'razao_social': 'Empresa teste', 'ramo_atividade': 'Serviços', 'bairro': 'Centro'}
+        result = client.post('/api/v1/empresas/', data, format='json')
+        self.assertEqual(result.status_code, 201, result.data)
+        self.assertEqual(result.data['cnpj'], cnpj)
+        self.assertEqual(client.get('/api/v1/empresas/', {'cnpj': formatted}).data[0]['id'], result.data['id'])
+        self.assertEqual(client.post('/api/v1/empresas/', data, format='json').status_code, 400)
+
     def test_cross_endpoint_requires_individual_permission(self):
         factory = APIRequestFactory()
         request = factory.get('/api/v1/dashboard/cruzados/?inicio=2026-09-01&fim=2026-10-26')
@@ -381,26 +153,92 @@ class CrossIndicatorTest(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(Atendimento.objects.get(pk=response.data['id']).setor_id, self.pat.pk)
 
-    def test_chat_fallback_uses_computed_values(self):
-        indicators = cross_snapshot(date(2026, 9, 1), date(2026, 10, 26))
-        result = direct_cross_answer('Qual o IC-01?', date(2026, 9, 1), date(2026, 10, 26), indicators)
-        self.assertIn('IC-01', result['resposta'])
-        self.assertEqual([source['indicador_id'] for source in result['fontes']], ['IC-01'])
+    def test_chat_uses_computed_cross_values_without_provider(self):
         request = APIRequestFactory().post('/api/v1/dashboard/cruzados/perguntar/', {
             'pergunta': 'Qual o IC-01?', 'inicio': '2026-09-01', 'fim': '2026-10-26',
         }, format='json')
         force_authenticate(request, user=self.admin)
-        with patch('ai_docs.views.ask_cross_ollama', side_effect=RuntimeError('offline')):
+        with patch('ai_docs.assistant.urlopen') as model:
             response = CrossQuestionView.as_view()(request)
+        model.assert_not_called()
         self.assertEqual(response.status_code, 200)
-        self.assertIn('IC-01', response.data['resposta'])
+        self.assertIn('Dados insuficientes', response.data['resposta'])
+        self.assertEqual(response.data['modo'], 'deterministico')
 
-    def test_model_cannot_replace_computed_cross_value(self):
-        indicators = cross_snapshot(date(2026, 9, 1), date(2026, 10, 26))
-        reply = {"message": {"content": json.dumps({
-            "resposta": "999 empresas", "indicadores_usados": ["IC-03"],
-        })}}
-        with patch('ai_docs.dashboard.urlopen', return_value=BytesIO(json.dumps(reply).encode())):
-            result = ask_cross_ollama('Qual o IC-03?', date(2026, 9, 1), date(2026, 10, 26), indicators)
-        self.assertNotIn('999', result['resposta'])
-        self.assertIn('0 empresas', result['resposta'])
+
+class StructuredAssistantTests(TestCase):
+    def setUp(self):
+        from django.core.cache import cache
+        from django.utils.timezone import localdate
+        from sector.models import Atividade, Indicador
+        from users.models import Users
+
+        cache.clear()
+        self.date = localdate()
+        self.pat = Sector.objects.create(nome='PAT', codigo='PAT')
+        self.sebrae = Sector.objects.create(nome='SEBRAE Aqui', codigo='SEBRAE')
+        self.manager = Users.objects.create(matricula='manager', nome='Gestor', senha_hash='x',
+                                            nivel_acesso='Gestor', id_setor=self.pat)
+        for sector, name, value in ((self.pat, 'Vagas registradas', 13), (self.sebrae, 'Orientações', 99)):
+            indicator = Indicador.objects.create(nome=name, tipo_dado='quantidade', unidade='registros', id_setor=sector)
+            Atividade.objects.create(id_indicador=indicator, data_cadastro=self.date, valor=value)
+        base = 'ZZZZZZZZ0101'
+        company = Empresa.objects.create(cnpj=base + cnpj_check_digits(base), razao_social='Empresa A',
+                                         ramo_atividade='Serviços', bairro='Centro')
+        Atendimento.objects.create(empresa=company, setor=self.sebrae, colaborador=self.manager,
+                                   data_atendimento=self.date, desfecho='Orientado', tipo=Atendimento.SEBRAE)
+
+    def ask(self, question):
+        from .views import AssistantQuestionView
+
+        request = APIRequestFactory().post('/api/v1/assistente/perguntar/',
+                                           {'pergunta': question, 'inicio': self.date.isoformat(),
+                                            'fim': self.date.isoformat()}, format='json')
+        force_authenticate(request, user=self.manager)
+        return AssistantQuestionView.as_view()(request)
+
+    def test_database_answers_respect_sector_without_provider(self):
+        with patch('ai_docs.assistant.urlopen') as provider:
+            response = self.ask('Qual foi a evolução dos indicadores do departamento?')
+        provider.assert_not_called()
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('13', response.data['resposta'])
+        self.assertNotIn('Orientações', response.data['resposta'])
+        self.assertIn('Lançamentos', response.data['fontes'][0]['rotulo'])
+        self.assertIn('não tem acesso', self.ask('Quantas empresas foram atendidas pelo SEBRAE-Aqui neste ano?').data['resposta'])
+        self.assertIn('permissão', self.ask('Quantas empresas financiadas possuem vagas no PAT?').data['resposta'])
+
+    def test_admin_question_resolves_relative_period(self):
+        self.manager.nivel_acesso = 'Administrador'
+        result = self.ask('Quantas empresas foram atendidas pelo SEBRAE-Aqui neste ano?').data
+        self.assertIn('1 empresa ', result['resposta'])
+        self.assertEqual(result['periodo']['inicio'], self.date.replace(month=1, day=1).isoformat())
+
+    def test_invalid_provider_intent_is_discarded(self):
+        from io import BytesIO
+        import json
+        from django.test import override_settings
+
+        external = {'choices': [{'message': {'content': json.dumps({'intencao': 'consulta_desconhecida'})}}]}
+        with (override_settings(SIGDEI_AI_PROVIDER='openai', SIGDEI_AI_API_KEY='chave-falsa-teste'),
+              patch('ai_docs.assistant.urlopen', return_value=BytesIO(json.dumps(external).encode())) as model):
+            response = self.ask('Como foi a movimentação? ZM.123.EBC/0001-09 operacao@exemplo.com')
+        self.assertEqual(response.data['fontes'], [])
+        self.assertIn('consulta suportada', response.data['resposta'])
+        payload = json.loads(model.call_args.args[0].data)
+        self.assertNotIn('Empresa A', str(payload))
+        self.assertNotIn('ZM.123.EBC/0001-09', str(payload))
+        self.assertNotIn('operacao@exemplo.com', str(payload))
+
+    def test_ollama_classification_uses_authorized_query(self):
+        from io import BytesIO
+        import json
+        from django.test import override_settings
+
+        reply = {'message': {'content': json.dumps({'intencao': 'evolucao'})}}
+        with (override_settings(SIGDEI_AI_PROVIDER='ollama'),
+              patch('ai_docs.assistant.urlopen', return_value=BytesIO(json.dumps(reply).encode()))):
+            response = self.ask('Como foi a movimentação?')
+        self.assertEqual(response.data['modo'], 'classificador_ollama')
+        self.assertIn('Vagas registradas', response.data['resposta'])
+        self.assertNotIn('Orientações', response.data['resposta'])
